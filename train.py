@@ -1,3 +1,14 @@
+"""
+This module trains the HybridGraphClassifier model using the preprocessed
+graph datasets.
+
+It loads training and validation data, performs epoch-based training with
+Adam optimizer and cross-entropy loss, evaluates validation performance each
+epoch, saves the best model based on validation accuracy, and logs the 
+training/validation metrics to a CSV file.
+"""
+
+
 import torch
 import torch.nn as nn
 from torch.optim import Adam
@@ -5,7 +16,6 @@ from torch.nn.functional import cross_entropy
 from torch_geometric.loader import DataLoader
 import pandas as pd
 import os
-
 from data_loader import get_dataloaders
 from model import HybridGraphClassifier
 from constants import (

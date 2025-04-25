@@ -1,6 +1,19 @@
 import torch
 from pathlib import Path
 
+# ======== Preprocessing Config ========
+MIN_COMMENTS = 5
+MAX_COMMENTS = 100
+DATASET_DIR = Path("datasets/")
+SUBREDDITS = ["AskReddit", "science", "politics", "cooking", "showerthoughts"]
+
+# ======== Model Architecture ========
+BERT_DIM = 768
+NODE2VEC_DIM = 64  
+FUSION_DIM = 768  
+GNN_HIDDEN_DIM  = 256
+NUM_CLASSES = 5  # UPDATE CLASS COUNT WHEN NECESSARY
+
 # ======== General Training Config ========
 BATCH_SIZE = 16
 EPOCHS = 20
@@ -41,3 +54,12 @@ FUSION_HIDDEN_DIM = 128
 
 # ======== Hardware ========
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# ======== Dataset Split Config ========
+FULL_DATASET_PATH = DATASET_DIR / "all_graphs.pt"
+TRAIN_RATIO = 0.7
+VAL_RATIO = 0.15
+TEST_RATIO = 0.15
+RANDOM_SEED = 42
+
+

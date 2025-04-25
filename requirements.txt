@@ -10,7 +10,6 @@ torchaudio==2.1.0+cpu
 # NLP and Transformers
 # ======================
 transformers
-sentencepiece
 
 # ======================
 # Utility Libraries
@@ -19,8 +18,11 @@ scikit-learn
 tqdm
 pandas
 numpy==1.24.4  # Compatible with PyTorch 2.1
-matplotlib
-seaborn
+
+# ======================
+# Reddit Scraping
+# ======================
+praw
 
 # ======================
 # PyTorch Geometric (install separately)

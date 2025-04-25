@@ -1,14 +1,26 @@
+"""
+This module defines the core model architecture for the Reddit thread classifier.
+
+It contains:
+- AttentionFusion: a learnable layer to combine BERT and Node2Vec embeddings.
+- HybridGraphClassifier: the full model that fuses text + structure,
+  applies a two-layer GCN, and predicts the subreddit class.
+
+Expected inputs:
+- Graph data with BERT node features and Node2Vec structural embeddings.
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_mean_pool
-
-# Constants (can be moved to constants.py)
-BERT_DIM = 768
-NODE2VEC_DIM = 64  # Placeholder if/when Node2Vec is integrated
-FUSION_DIM = 768  # Final size after attention fusion (match BERT_DIM)
-GNN_HIDDEN = 256
-NUM_CLASSES = 5
+from constants import (
+    BERT_DIM,
+    NODE2VEC_DIM,
+    FUSION_DIM,
+    GNN_HIDDEN_DIM,
+    NUM_CLASSES
+)
 
 class AttentionFusion(nn.Module):
     def __init__(self, dim1, dim2, out_dim):
@@ -39,15 +51,15 @@ class HybridGraphClassifier(nn.Module):
         self.fusion = AttentionFusion(BERT_DIM, NODE2VEC_DIM, FUSION_DIM)
 
         # GNN layers
-        self.conv1 = GCNConv(FUSION_DIM, GNN_HIDDEN)
-        self.conv2 = GCNConv(GNN_HIDDEN, GNN_HIDDEN)
+        self.conv1 = GCNConv(FUSION_DIM, GNN_HIDDEN_DIM)
+        self.conv2 = GCNConv(GNN_HIDDEN_DIM, GNN_HIDDEN_DIM)
 
         # Graph-level classifier
         self.classifier = nn.Sequential(
-            nn.Linear(GNN_HIDDEN, GNN_HIDDEN // 2),
+            nn.Linear(GNN_HIDDEN_DIM, GNN_HIDDEN_DIM // 2),
             nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(GNN_HIDDEN // 2, NUM_CLASSES)
+            nn.Linear(GNN_HIDDEN_DIM // 2, NUM_CLASSES)
         )
 
     def forward(self, data):

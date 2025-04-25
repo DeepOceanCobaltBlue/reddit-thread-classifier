@@ -1,15 +1,32 @@
+"""
+This module processes scraped Reddit threads into graph datasets
+for model training.
+
+Main points:
+- Runs preprocessing across all subreddits listed in SUBREDDITS.
+- Expects each subreddit to exist in datasets/ with scraped.jsonl files.
+- Filters out posts and comments marked as '[removed]' or '[deleted]'.
+- For each submission + its comments, builds a graph using utils/graph_tools.py > thread_to_graph().
+- Saves the full processed dataset to datasets/all_graphs.pt.
+
+Submission processing:
+- Submissions must have a non-removed title or selftext.
+- Submissions must have at least MIN_COMMENTS.
+- Only comments with real text (not removed/deleted) are used.
+"""
+
 import json
 from pathlib import Path
 from typing import List, Dict
 import torch
 from torch_geometric.data import Data
 from utils.graph_tools import thread_to_graph
-
-# ======= Constants =======
-MIN_COMMENTS = 5
-MAX_COMMENTS = 100
-DATASET_DIR = Path("datasets")
-SUBREDDITS = ["AskReddit", "science", "politics", "cooking", "showerthoughts"]
+from constants import ( 
+    MIN_COMMENTS, 
+    MAX_COMMENTS, 
+    DATASET_DIR, 
+    SUBREDDITS 
+)
 
 # Build label mapping once
 label_map = {name: i for i, name in enumerate(SUBREDDITS)}
@@ -35,10 +52,15 @@ def preprocess_subreddit(subreddit: str) -> List[Data]:
     submissions = load_jsonl(sub_path)
     comments = load_jsonl(com_path)
 
-    # Map submission_id to submission
+    # Filter for good submissions
     sub_map = {
         s["id"]: s for s in submissions
-        if (s.get("title") or s.get("selftext")) and s.get("num_comments", 0) >= MIN_COMMENTS
+        if (
+            (s.get("title") or s.get("selftext")) and
+            (s.get("title", "").lower() not in ("[removed]", "[deleted]")) and
+            (s.get("selftext", "").lower() not in ("[removed]", "[deleted]")) and
+            s.get("num_comments", 0) >= MIN_COMMENTS
+        )
     }
 
     # Group comments by thread ID

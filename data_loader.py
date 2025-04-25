@@ -1,10 +1,19 @@
+"""
+This module loads and prepares the graph datasets for training and evaluation.
+
+It embeds node texts using BERT (or loads cached embeddings if available),
+ensures that each graph has Node2Vec structural embeddings,
+caches processed graphs for faster reuse, and returns
+PyTorch Geometric DataLoaders for the train, validation, and test splits.
+"""
+
+
 import torch
 from torch_geometric.data import DataLoader
 from transformers import AutoTokenizer, AutoModel
 from tqdm import tqdm
 from pathlib import Path
 from utils.bert_embedder import encode_texts_with_bert
-
 from constants import (
     TRAIN_GRAPH_PATH,
     VAL_GRAPH_PATH,

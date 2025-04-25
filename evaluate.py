@@ -1,3 +1,9 @@
+"""
+This module loads the saved trained model and evaluates its performance on the test dataset.
+It computes key classification metrics including accuracy, precision, recall, and F1 score.
+Test graphs are loaded and embedded if necessary, then passed through the model for prediction.
+"""
+
 import torch
 from torch_geometric.data import DataLoader
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
@@ -20,10 +26,6 @@ def evaluate():
 
     with torch.no_grad():
         for batch in test_loader:
-            x = batch.x.to(DEVICE)
-            struct = batch.struct_emb.to(DEVICE)
-            edge_index = batch.edge_index.to(DEVICE)
-            batch_idx = batch.batch.to(DEVICE)
             y = batch.y.to(DEVICE)
 
             logits = model(batch)

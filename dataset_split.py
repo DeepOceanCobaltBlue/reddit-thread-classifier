@@ -1,16 +1,24 @@
+"""
+This module splits the full preprocessed Reddit graph dataset into training,
+validation, and test sets. 
+
+The dataset is loaded, shuffled with a fixed random seed for reproducibility,
+partitioned according to predefined ratios (70/15/15), and saved back into
+separate .pt files for model training and evaluation.
+"""
+
 import torch
 import random
 from pathlib import Path
 import torch_geometric.data
-
-# Load the dataset
-DATASET_DIR = Path("datasets")
-INPUT_FILE = DATASET_DIR / "all_graphs.pt"
-
-TRAIN_RATIO = 0.7
-VAL_RATIO = 0.15
-TEST_RATIO = 0.15
-RANDOM_SEED = 42
+from constants import (
+    FULL_DATASET_PATH,
+    DATASET_DIR,
+    TRAIN_RATIO,
+    VAL_RATIO,
+    TEST_RATIO,
+    RANDOM_SEED
+)
 
 random.seed(RANDOM_SEED)
 
@@ -19,17 +27,20 @@ def split_dataset():
 
     from torch.serialization import add_safe_globals
     add_safe_globals([torch_geometric.data.Data])
-    all_graphs = torch.load(INPUT_FILE, weights_only=False)
+    all_graphs = torch.load(FULL_DATASET_PATH, weights_only=False)
 
     random.shuffle(all_graphs)
 
     total = len(all_graphs)
     train_end = int(total * TRAIN_RATIO)
     val_end = train_end + int(total * VAL_RATIO)
+    test_end = val_end + int(total * TEST_RATIO)
+
+    assert test_end <= total, "Ratio split cannot sum > 1.0"
 
     train_graphs = all_graphs[:train_end]
     val_graphs = all_graphs[train_end:val_end]
-    test_graphs = all_graphs[val_end:]
+    test_graphs = all_graphs[val_end:test_end]
 
     torch.save(train_graphs, DATASET_DIR / "train_graphs.pt")
     torch.save(val_graphs, DATASET_DIR / "val_graphs.pt")

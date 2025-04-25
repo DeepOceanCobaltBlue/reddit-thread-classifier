@@ -1,9 +1,19 @@
+"""
+This module generates structural embeddings for each graph using Node2Vec.
+It loads the train/val/test graph datasets, computes Node2Vec embeddings
+based purely on the reply structure (edges), and attaches the resulting
+embeddings as 'struct_emb' to each graph object.
+
+Graphs without edges are filled with zero vectors for 'struct_emb'.
+
+After processing, the updated graphs overwrite the original .pt files.
+"""
+
 import torch
 from pathlib import Path
 from torch_geometric.nn import Node2Vec
 from torch_geometric.data import Data
 from tqdm import tqdm
-
 from constants import (
     NODE2VEC_DIM,
     NODE2VEC_WALK_LENGTH,
@@ -16,8 +26,6 @@ from constants import (
     VAL_GRAPH_PATH,
     TEST_GRAPH_PATH
 )
-
-
 
 def run_node2vec(graphs, dim=NODE2VEC_DIM):
     processed_graphs = []
