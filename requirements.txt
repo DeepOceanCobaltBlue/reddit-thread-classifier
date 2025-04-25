@@ -1,0 +1,28 @@
+# ======================
+# Core PyTorch ML Stack
+# ======================
+torch==2.1.0+cpu
+torchvision==0.16.0+cpu
+torchaudio==2.1.0+cpu
+--find-links https://download.pytorch.org/whl/torch_stable.html
+
+# ======================
+# NLP and Transformers
+# ======================
+transformers
+sentencepiece
+
+# ======================
+# Utility Libraries
+# ======================
+scikit-learn
+tqdm
+pandas
+numpy==1.24.4  # Compatible with PyTorch 2.1
+matplotlib
+seaborn
+
+# ======================
+# PyTorch Geometric (install separately)
+# ======================
+# pip install torch-scatter torch-sparse torch-cluster torch-geometric -f https://data.pyg.org/whl/torch-2.1.0+cpu.html

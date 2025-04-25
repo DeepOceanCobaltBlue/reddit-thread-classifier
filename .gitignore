@@ -1,0 +1,16 @@
+# Ignore dataset and model artifacts
+datasets/
+saved_models/
+logs/
+*.pt
+*.jsonl
+*.csv
+
+# Ignore venv (optional, if you created one here)
+venv/
+venv310/
+
+# Ignore cache and junk
+__pycache__/
+*.pyc
+.DS_Store
