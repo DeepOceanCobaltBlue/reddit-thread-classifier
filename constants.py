@@ -62,4 +62,7 @@ VAL_RATIO = 0.15
 TEST_RATIO = 0.15
 RANDOM_SEED = 42
 
+RAW_TRAIN_GRAPH_PATH = DATASET_DIR / "train_graphs.pt"
+RAW_VAL_GRAPH_PATH = DATASET_DIR / "val_graphs.pt"
+RAW_TEST_GRAPH_PATH = DATASET_DIR / "test_graphs.pt"
 

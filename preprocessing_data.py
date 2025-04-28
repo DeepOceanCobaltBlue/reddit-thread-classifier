@@ -2,17 +2,14 @@
 This module processes scraped Reddit threads into graph datasets
 for model training.
 
-Main points:
-- Runs preprocessing across all subreddits listed in SUBREDDITS.
-- Expects each subreddit to exist in datasets/ with scraped.jsonl files.
-- Filters out posts and comments marked as '[removed]' or '[deleted]'.
-- For each submission + its comments, builds a graph using utils/graph_tools.py > thread_to_graph().
+- Processes each subreddit listed in SUBREDDITS.
+- Expects scraped.jsonl files inside datasets/<subreddit>/submissions and /comments.
+- Filters out posts/comments marked '[removed]' or '[deleted]'.
+- Builds graphs using thread_to_graph() from utils.graph_tools.
 - Saves the full processed dataset to datasets/all_graphs.pt.
 
-Submission processing:
-- Submissions must have a non-removed title or selftext.
-- Submissions must have at least MIN_COMMENTS.
-- Only comments with real text (not removed/deleted) are used.
+Node2Vec Fix:
+- After graph creation, ensures graph.x is a tensor (not a list) for compatibility.
 """
 
 import json
@@ -21,14 +18,14 @@ from typing import List, Dict
 import torch
 from torch_geometric.data import Data
 from utils.graph_tools import thread_to_graph
-from constants import ( 
-    MIN_COMMENTS, 
-    MAX_COMMENTS, 
-    DATASET_DIR, 
-    SUBREDDITS 
+from constants import (
+    MIN_COMMENTS,
+    MAX_COMMENTS,
+    DATASET_DIR,
+    SUBREDDITS
 )
 
-# Build label mapping once
+# ======= Build Label Map =======
 label_map = {name: i for i, name in enumerate(SUBREDDITS)}
 
 # ======= Load JSONL Helper =======
@@ -52,7 +49,7 @@ def preprocess_subreddit(subreddit: str) -> List[Data]:
     submissions = load_jsonl(sub_path)
     comments = load_jsonl(com_path)
 
-    # Filter for good submissions
+    # Filter good submissions
     sub_map = {
         s["id"]: s for s in submissions
         if (
@@ -77,7 +74,6 @@ def preprocess_subreddit(subreddit: str) -> List[Data]:
         if not (MIN_COMMENTS <= len(thread) <= MAX_COMMENTS):
             continue
 
-        # Build node list for thread_to_graph
         nodes = []
 
         # Submission node
@@ -101,6 +97,11 @@ def preprocess_subreddit(subreddit: str) -> List[Data]:
         # Build graph
         try:
             graph = thread_to_graph(nodes, label_map)
+
+            # ===== Node2Vec Fix: ensure .x is a tensor
+            if isinstance(graph.x, list):
+                graph.x = torch.ones((len(graph.x), 1))  # Dummy 1D feature per node
+
             dataset.append(graph)
         except Exception as e:
             print(f"⚠️ Skipping thread {sid} due to error: {e}")
@@ -108,7 +109,7 @@ def preprocess_subreddit(subreddit: str) -> List[Data]:
     print(f"→ {len(dataset)} valid graphs for r/{subreddit}")
     return dataset
 
-# ======= Full Dataset Build =======
+# ======= Preprocess All Subreddits =======
 def preprocess_all():
     all_graphs = []
     for sub in SUBREDDITS:
@@ -117,6 +118,6 @@ def preprocess_all():
     torch.save(all_graphs, DATASET_DIR / "all_graphs.pt")
     print("✅ Saved all preprocessed graphs to all_graphs.pt")
 
-# ======= Main =======
+# ======= Main Entrypoint =======
 if __name__ == "__main__":
     preprocess_all()

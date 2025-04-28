@@ -7,7 +7,6 @@ caches processed graphs for faster reuse, and returns
 PyTorch Geometric DataLoaders for the train, validation, and test splits.
 """
 
-
 import torch
 from torch_geometric.data import DataLoader
 from transformers import AutoTokenizer, AutoModel
@@ -30,6 +29,23 @@ tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL_NAME)
 bert_model = AutoModel.from_pretrained(BERT_MODEL_NAME).to(DEVICE)
 bert_model.eval()
 
+def embed_node_texts(texts, batch_size=64):
+    embeddings = []
+    with torch.no_grad():
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i:i+batch_size]
+            encoded_input = tokenizer(
+                batch_texts,
+                padding=True,
+                truncation=True,
+                max_length=MAX_TOKEN_LENGTH,
+                return_tensors="pt"
+            ).to(DEVICE)
+            outputs = bert_model(**encoded_input)
+            cls_embeddings = outputs.last_hidden_state[:, 0, :]
+            embeddings.append(cls_embeddings.cpu())
+    return torch.cat(embeddings, dim=0)
+
 # ✅ Batched BERT encoding function
 def encode_bert(texts, batch_size=64):
     embeddings = []
@@ -48,7 +64,16 @@ def encode_bert(texts, batch_size=64):
             embeddings.append(cls_embeddings.cpu())
     return torch.cat(embeddings, dim=0)
 
-def load_graphs(path: Path) -> list:
+def is_graph_valid(graph) -> bool:
+    """Simple check: edge_index must be inside bounds of node count."""
+    if graph.edge_index.numel() == 0:
+        return True  # Allow graphs with no edges
+    max_node_idx = graph.x.size(0) - 1
+    if graph.edge_index.max().item() > max_node_idx:
+        return False
+    return True
+
+def load_graphs(path: Path, use_bert=True) -> list:
     embedded_path = Path(str(path).replace(".pt", "_embedded.pt"))
 
     # ✅ If already embedded, use it directly
@@ -60,20 +85,22 @@ def load_graphs(path: Path) -> list:
     print(f"📦 Loading raw graphs from: {path}")
     graphs = torch.load(path)
 
-    print("🧠 Encoding BERT embeddings per graph...")
-    for graph in tqdm(graphs):
-        node_texts = graph.x
+    if use_bert:
+        print("🧠 Encoding BERT embeddings per graph...")
+        for graph in tqdm(graphs):
+            node_texts = graph.x
+            if isinstance(node_texts[0], str):
+                graph.x = embed_node_texts(node_texts)
 
-        # ✅ Only encode if node_texts are strings (not already embedded tensors)
-        if isinstance(node_texts[0], str):
-            graph.x = encode_texts_with_bert(node_texts)
-
+    # Always ensure struct_emb exists
+    for graph in graphs:
         if not hasattr(graph, "struct_emb"):
             graph.struct_emb = torch.zeros((len(graph.x), NODE2VEC_DIM))
 
     torch.save(graphs, embedded_path)
     print(f"✅ Saved embedded version: {embedded_path.name}")
     return graphs
+
 
 # ✅ Return dataloaders
 def get_dataloaders():

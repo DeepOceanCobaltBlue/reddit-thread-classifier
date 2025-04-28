@@ -1,55 +1,47 @@
 """
-This module splits the full preprocessed Reddit graph dataset into training,
-validation, and test sets. 
+Splits all_graphs.pt into train/val/test splits.
 
-The dataset is loaded, shuffled with a fixed random seed for reproducibility,
-partitioned according to predefined ratios (70/15/15), and saved back into
-separate .pt files for model training and evaluation.
+This script loads the full dataset (all_graphs.pt) and splits it into three sets:
+- train_graphs.pt
+- val_graphs.pt
+- test_graphs.pt
+
+It uses constant ratios defined in constants.py.
 """
 
 import torch
 import random
 from pathlib import Path
-import torch_geometric.data
-from constants import (
-    FULL_DATASET_PATH,
-    DATASET_DIR,
-    TRAIN_RATIO,
-    VAL_RATIO,
-    TEST_RATIO,
-    RANDOM_SEED
-)
+from constants import DATASET_DIR, TRAIN_RATIO, VAL_RATIO, TEST_RATIO, RANDOM_SEED
 
+# Set reproducibility
 random.seed(RANDOM_SEED)
+
+# Paths
+INPUT_FILE = DATASET_DIR / "all_graphs.pt"
+TRAIN_FILE = DATASET_DIR / "train_graphs.pt"
+VAL_FILE = DATASET_DIR / "val_graphs.pt"
+TEST_FILE = DATASET_DIR / "test_graphs.pt"
 
 def split_dataset():
     print("📦 Loading all graphs...")
+    graphs = torch.load(INPUT_FILE)
+    random.shuffle(graphs)
 
-    from torch.serialization import add_safe_globals
-    add_safe_globals([torch_geometric.data.Data])
-    all_graphs = torch.load(FULL_DATASET_PATH, weights_only=False)
+    n = len(graphs)
+    n_train = int(n * TRAIN_RATIO)
+    n_val = int(n * VAL_RATIO)
 
-    random.shuffle(all_graphs)
+    train_graphs = graphs[:n_train]
+    val_graphs = graphs[n_train:n_train + n_val]
+    test_graphs = graphs[n_train + n_val:]
 
-    total = len(all_graphs)
-    train_end = int(total * TRAIN_RATIO)
-    val_end = train_end + int(total * VAL_RATIO)
-    test_end = val_end + int(total * TEST_RATIO)
+    print(f"✂️ Splitting: {len(train_graphs)} train, {len(val_graphs)} val, {len(test_graphs)} test graphs.")
 
-    assert test_end <= total, "Ratio split cannot sum > 1.0"
-
-    train_graphs = all_graphs[:train_end]
-    val_graphs = all_graphs[train_end:val_end]
-    test_graphs = all_graphs[val_end:test_end]
-
-    torch.save(train_graphs, DATASET_DIR / "train_graphs.pt")
-    torch.save(val_graphs, DATASET_DIR / "val_graphs.pt")
-    torch.save(test_graphs, DATASET_DIR / "test_graphs.pt")
-
-    print(f"✅ Dataset split complete:")
-    print(f"  Train: {len(train_graphs)}")
-    print(f"  Val:   {len(val_graphs)}")
-    print(f"  Test:  {len(test_graphs)}")
+    torch.save(train_graphs, TRAIN_FILE)
+    torch.save(val_graphs, VAL_FILE)
+    torch.save(test_graphs, TEST_FILE)
+    print("✅ Dataset splits saved!")
 
 if __name__ == "__main__":
     split_dataset()
