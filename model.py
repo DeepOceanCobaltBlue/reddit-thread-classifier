@@ -47,7 +47,7 @@ class HybridGraphClassifier(nn.Module):
     def __init__(self):
         super().__init__()
 
-        # Optional: fuse BERT + Node2Vec
+        # Fuses BERT + Node2Vec embeddings
         self.fusion = AttentionFusion(BERT_DIM, NODE2VEC_DIM, FUSION_DIM)
 
         # GNN layers
@@ -65,9 +65,11 @@ class HybridGraphClassifier(nn.Module):
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
-        # TEMP: until Node2Vec is integrated
-        node2vec_dummy = torch.zeros_like(x[:, :NODE2VEC_DIM])
-        x = self.fusion(x, node2vec_dummy)
+        # 🛠 PROPER: Use the real Node2Vec embeddings
+        struct_emb = data.struct_emb
+
+        # Fuse BERT (x) and Node2Vec (struct_emb)
+        x = self.fusion(x, struct_emb)
 
         x = self.conv1(x, edge_index)
         x = F.relu(x)
